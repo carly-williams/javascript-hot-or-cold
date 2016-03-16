@@ -1,159 +1,128 @@
 //initialize variables
 'use strict';
-var secretNumber, 
-userGuess, 
-pastGuesses = [], 
-count,
-guessHtml, 
-userFeedback,
-alreadyGuessed,
-newButton,
-form ,
-input,
-feedback,
-countElement,
-guessList;
+// var secretNumber, 
+// userGuess, 
+// pastGuesses = [], 
+// count,
+// guessHtml, 
+// userFeedback,
+// alreadyGuessed,
+// newButton,
+// form ,
+// input,
+// feedback,
+// countElement,
+// guessList;
 
-$(document).ready(pageLoad);
+$(document).ready(function() {
 
- function pageLoad(){
-	
 	/*--- Display information modal box ---*/
-  	$('.what').click(function(){
-    	$('.overlay').fadeIn(1000);
-  	});
-  	/*--- Hide information modal box ---*/
-  	$('a.close').click(function(){
-  		$('.overlay').fadeOut(1000);
-  	});
+	$(".what").click(function(){
+  	$(".overlay").fadeIn(1000);
 
-  	//fetch dom objects
-  	newButton = $('a.new');
-  	form = $('form');
-  	input = form.find('#userGuess');
-  	feedback = $('#feedback');
-  	countElement = $('#count');
-  	guessList = $('#guessList');
+	});
 
-    //page load
-    newGame();
-    //event handlers
-    form.submit(function(event){
-      event.preventDefault();
-      getUserGuess();
-    });
-    newButton.click(newGame);
-}
+	/*--- Hide information modal box ---*/
+	$("a.close").click(function(){
+		$(".overlay").fadeOut(1000);
+	});
 
-//new game function
-function newGame(){
-	form.find('input[type=submit]').css('opacity','1');
-	resetVariables();
-	render();
-	generateNumber();
-}
+	// When user clicks New Game 
+	$("a.new").click(function(){
+		newGame();
+	});
 
-//get the user guess
-function getUserGuess(){
-	//get the user guess
-	userGuess = input.val();
-	//reset input value
-	input.val('');
-	//focus on input for next guess
-	input.focus();
-	//ensure valid input
-	if(checkGuess()){return ;}
-	//generate feedback
-	generateFeedback();
-	//track the past user guesses
-	trackGuess();
-	//increment the count
-	guessCount();
-	//render changes to the page
-	render();
-}
+	// When user clicks the Guess button
+	$("#guessButton").click(function(event){
+		event.preventDefault();
+		var guess = $("#userGuess").val();
+		giveFeedbackOnGuess(guess);
+	})
 
-  	//check for valid input
-  	function checkGuess(){
-  		if(userGuess % 1 !== 0){
-  			alert('please input a number');
-  			return true;
-  		}
-  		if(userGuess < 0 || userGuess > 101){
-  			alert('please choose a number between zero and 100');
-  			return true;
-  		}
-  		if(pastGuesses.length > 0){
-			$.each(pastGuesses,function(guess,value){
-				if(userGuess == value){
-					alreadyGuessed = true;
-				}
-			}); 
+	// When user hits Enter/Return key after entering guess
+	$('#userGuess').keydown(function(event) {
+		if (event.keyCode === 13) {
+			event.preventDefault();
+			var guess = $("#userGuess").val();
+			giveFeedbackOnGuess(guess);
 		}
-		if(alreadyGuessed){
-			alreadyGuessed = false;
-			alert('You guessed this number already');
-			return true;
+	});
+
+	var secretNum = null;
+	var numGuesses = 0;
+
+	// Generate a secret number between 1 and 100
+	function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	// Provide feedback to user after entering guess
+	function giveFeedbackOnGuess(guess) {
+
+		// Remove the guess text from the Enter your Guess input
+		$("#userGuess").val('');
+		
+		// Increment the number of guesses and append the new guess
+		numGuesses++;
+		$('#count').text(numGuesses + '');	
+		$('#guessList').append('<li>' + guess + '</li>');
+
+		// Check if the guess is an integer
+		if (guess % 1 != 0 || guess.indexOf(".")!=-1) {
+			$('#feedback').text("Please enter an integer.");
+			return;
 		}
-    return false;
+
+		// Check if the guess is in the correct range
+		if ((guess < 1) || (guess > 100)) {
+			$('#feedback').text("Please enter a number between 1 inclusive and 100 inclusive.");
+			return;			
+		}
+
+		// Check if the guess is equal to the secret number
+		if (guess == secretNum) {
+			$('#feedback').text("Congrats! You guessed it!");
+		}
+		// Otherwise, provide feedback (hot, cold, etc.)
+		else {
+			var diff = Math.abs(secretNum - guess);
+
+			if (diff >= 50) {
+				$('#feedback').text("You are ice cold.");
+			}
+			else if ((diff >= 30) && (diff < 50)) {
+				$('#feedback').text("You are cold.");
+			}
+			else if ((diff >= 20) && (diff < 30)) {
+				$('#feedback').text("You are warm.")
+			}
+			else if ((diff >= 10) && (diff < 20)) {
+				$('#feedback').text("You are hot.")
+			}
+			else {
+				$('#feedback').text("You are very hot.")
+			}			
+		}
 	}
 
-//generate user feedback
-function generateFeedback(){
-	if(secretNumber == userGuess){
-		winner();
-	} else if(Math.abs(secretNumber - userGuess) < 10){
-		userFeedback = 'hot';
-	} else if(Math.abs(secretNumber - userGuess) < 20 && Math.abs(secretNumber - userGuess) > 9){
-		userFeedback = ' Kinda hot';
-	} else if(Math.abs(secretNumber - userGuess) < 30 && Math.abs(secretNumber - userGuess) > 19){
-		userFeedback = 'less than warm';
-	} else {
-		userFeedback = 'cold';
+	// New game function
+	function newGame() {
+
+		numGuesses = 0;
+		$('#count').text(numGuesses + '');
+		$('#feedback').text("Make your Guess!");
+		$("#userGuess").val('');
+		$('#guessList').empty();
+
+		secretNum = getRandomInt(1, 100);
+		// For debugging purposes
+		console.log(secretNum);
 	}
-}
 
-//keep track of the users past guesses
-function trackGuess(){
-	pastGuesses.push(userGuess);
-	guessHtml = '';
-	if(pastGuesses[0].length) {
-		$.each(pastGuesses,function(guess,value){
-			guessHtml += '<li>' + value + '</li>';
-		});
-	}
-}
+	// Start a new game on load
+	newGame();
 
-//keep track of guess count
-function guessCount(){
-	count++;
-}
-
-	//page render function
-function render(){
-	guessList.html(guessHtml);
-	countElement.html(count);
-	feedback.html(userFeedback);
-}
-
-function winner(){
-	userFeedback = 'You Won. Click new game to play again';
-	form.find('input[type=submit]').css('opacity','0');
-}
-  	
-//generate secret number
-function generateNumber(){
-	secretNumber = Math.floor(Math.random()*100)+1;
-}
-
-//reset variable 
-function resetVariables(){
-	count = 0;
-	pastGuesses = [];
-	guessHtml='';
-	userGuess = '';
-	userFeedback = 'Make your Guess!';
-}
+});
   	
   	
 
